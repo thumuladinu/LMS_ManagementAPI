@@ -22,11 +22,22 @@ namespace LMS_ManagementAPI.Controllers
                 return new List<Course>();
 
             var json = System.IO.File.ReadAllText(FilePath);
-            return JsonSerializer.Deserialize<List<Course>>(json) ?? new List<Course>();
+            return JsonSerializer.Deserialize<List<Course>>(json,
+                new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                }) ?? new List<Course>();
         }
 
         private static void SaveToFile() =>
-            System.IO.File.WriteAllText(FilePath, JsonSerializer.Serialize(_courses, new JsonSerializerOptions { WriteIndented = true }));
+            System.IO.File.WriteAllText(FilePath,
+                JsonSerializer.Serialize(
+                    _courses,
+                    new JsonSerializerOptions
+                    {
+                        WriteIndented = true,
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                    }));
 
         [HttpGet]
         public ActionResult<IEnumerable<Course>> GetCourses() => _courses;
