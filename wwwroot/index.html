@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LMS Course Manager</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="container py-4" style="max-width: 700px;">
+    <h2 class="text-center mb-4">LMS - Course Manager</h2>
+
+    <form id="courseForm" class="border p-3 mb-4 rounded shadow-sm bg-light">
+        <input type="hidden" id="courseId">
+        <input class="form-control mb-2" type="text" id="courseName" placeholder="Course Name" required>
+        <input class="form-control mb-2" type="text" id="instructor" placeholder="Instructor Name" required>
+        <input class="form-control mb-3" type="number" id="duration" placeholder="Duration (weeks)" min="1" max="50" required>
+        <button class="btn btn-success w-100" type="submit">Submit</button>
+    </form>
+
+    <table class="table table-sm table-striped table-hover">
+        <thead class="table-dark"><tr><th>ID</th><th>Course</th><th>Instructor</th><th>Weeks</th><th>Actions</th></tr></thead>
+        <tbody id="courseTable"></tbody>
+    </table>
+
+    <script>
+        const apiUrl = '/api/courses';
+
+        async function loadCourses() {
+            const res = await fetch(apiUrl);
+            const data = await res.json();
+            document.getElementById('courseTable').innerHTML = data.map(c => `
+                <tr>
+                    <td>${c.id}</td>
+                    <td>${c.courseName}</td>
+                    <td>${c.instructor}</td>
+                    <td>${c.durationWeeks}</td>
+                    <td>
+                        <button class='btn btn-sm btn-info' onclick='editCourse(${JSON.stringify(c)})'>Edit</button>
+                        <button class='btn btn-sm btn-danger' onclick='deleteCourse(${c.id})'>Delete</button>
+                    </td>
+                </tr>`).join('');
+        }
+
+        function editCourse(c) {
+            document.getElementById('courseId').value = c.id;
+            document.getElementById('courseName').value = c.courseName;
+            document.getElementById('instructor').value = c.instructor;
+            document.getElementById('duration').value = c.durationWeeks;
+        }
+
+        async function deleteCourse(id) {
+            await fetch(\`\${apiUrl}/\${id}\`, { method: 'DELETE' });
+            loadCourses();
+        }
+
+        document.getElementById('courseForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const rawId = document.getElementById('courseId').value;
+            const course = {
+                courseName: document.getElementById('courseName').value.trim(),
+                instructor: document.getElementById('instructor').value.trim(),
+                durationWeeks: parseInt(document.getElementById('duration').value)
+            };
+            if (!course.courseName || !course.instructor || isNaN(course.durationWeeks)) return alert("All fields required");
+
+            if (rawId) course.id = parseInt(rawId);
+
+            if (course.id) {
+                await fetch(\`\${apiUrl}/\${course.id}\`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(course)
+                });
+            } else {
+                await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(course)
+                });
+            }
+
+            document.getElementById('courseForm').reset();
+            document.getElementById('courseId').value = "";
+            loadCourses();
+        });
+
+        loadCourses();
+    </script>
+</body>
+</html>
